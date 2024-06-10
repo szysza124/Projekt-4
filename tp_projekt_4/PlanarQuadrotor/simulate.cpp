@@ -59,9 +59,9 @@ Eigen::MatrixXf LQR(PlanarQuadrotor& quadrotor, float dt) {
     Eigen::MatrixXf K = Eigen::MatrixXf::Zero(6, 6);
     Eigen::Vector2f input = quadrotor.GravityCompInput();
 
-    Q.diagonal() << 0.004, 0.004, 400, 0.005, 0.045, 2 / 2 / M_PI;
-    R.row(0) << 30, 7;
-    R.row(1) << 7, 30;
+    Q.diagonal() << 0.004, 0.004, 400, 0.005, 0.045, 2. / 2 / M_PI;
+    R.row(0) << 3, 0.7;
+    R.row(1) << 0.7, 3;
 
     std::tie(A, B) = quadrotor.Linearize();
     A_discrete = Eye + dt * A;
@@ -104,6 +104,7 @@ int main(int argc, char* args[])
     std::shared_ptr<SDL_Renderer> gRenderer = nullptr;
     const int SCREEN_WIDTH = 1280;
     const int SCREEN_HEIGHT = 720;
+    const float scale_factor = 0.01f; // Adjust based on your simulation's scale
     const int start_x = 640;
     const int start_y = 360;
 
@@ -115,6 +116,8 @@ int main(int argc, char* args[])
     */
     Eigen::VectorXf initial_state = Eigen::VectorXf::Zero(6);
     initial_state << start_x, start_y, 0, 0, 0, 0;
+    
+
     PlanarQuadrotor quadrotor(initial_state);
     PlanarQuadrotorVisualizer quadrotor_visualizer(&quadrotor);
     /**
@@ -125,8 +128,10 @@ int main(int argc, char* args[])
     Eigen::VectorXf goal_state = Eigen::VectorXf::Zero(6);
     goal_state << SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0, 0, 0, 0;
     quadrotor.SetGoal(goal_state);
+    //goal_state << 0, 0, 0, 0, 0, 0;
+    //quadrotor.SetGoal(goal_state);
     /* Timestep for the simulation */
-    const float dt = 0.01;
+    const float dt = 0.1 ;
     Eigen::MatrixXf K = LQR(quadrotor, dt);
     Eigen::Vector2f input = Eigen::Vector2f::Zero(2);
 
@@ -135,20 +140,16 @@ int main(int argc, char* args[])
      * 1. Update x, y, theta history vectors to store trajectory of the quadrotor
      * 2. Plot trajectory using matplot++ when key 'p' is clicked
     */
-    // Tworzenie wektorów historii pozycji X, Y, k¹ta Theta oraz czasu,
-    // zainicjowanych pocz¹tkowymi wartoœciami
-    std::vector<float> x_history{ float(start_x) }; // Wektor historii pozycji X, inicjowany wartoœci¹ start_x
-    std::vector<float> y_history{ float(start_y) }; // Wektor historii pozycji Y, inicjowany wartoœci¹ start_y
-    std::vector<float> theta_history{ 0 }; // Wektor historii k¹ta Theta, inicjowany wartoœci¹ 0
-    std::vector<float> time{ 0 }; // Wektor czasu, inicjowany wartoœci¹ 0
+    std::vector<float> x_history;
+    std::vector<float> y_history;
+    std::vector<float> theta_history;
 
     if (init(gWindow, gRenderer, SCREEN_WIDTH, SCREEN_HEIGHT) >= 0)
     {
         SDL_Event e;
         bool quit = false;
         float delay;
-        int x, y;
-        float probki = 0;
+        int x=start_x, y=start_y;
         Eigen::VectorXf state = Eigen::VectorXf::Zero(6);
 
         while (!quit)
@@ -160,19 +161,23 @@ int main(int argc, char* args[])
                 {
                     quit = true;
                 }
-                else
+                else if (e.type == SDL_MOUSEMOTION)
                 {
-                    if (e.type == SDL_MOUSEMOTION)
-                    {
-                        SDL_GetMouseState(&x, &y);
-                        std::cout << "Mouse position: (" << x << ", " << y << ")" << std::endl;
-                    }
-                    if (e.type == SDL_MOUSEBUTTONDOWN) {
-                        SDL_GetMouseState(&x, &y);
-                        goal_state << x, y, 0, 0, 0, 0;
-                        std::cout << "Mouse left-click " << x << " " << y << std::endl;
-                        quadrotor.SetGoal(goal_state);
-                    }
+                    SDL_GetMouseState(&x, &y);
+                    std::cout << "Mouse position: (" << x << ", " << y << ")" << std::endl;
+                }
+                if (e.type == SDL_MOUSEBUTTONDOWN)
+                {
+                    SDL_GetMouseState(&x, &y);
+                    
+                    float x_world = x;// * scale_factor;
+                   
+                    float y_world = y; //* scale_factor;
+
+
+                    goal_state << x_world, y_world, 0, 0, 0, 0;
+                    quadrotor.SetGoal(goal_state);
+                }
                     if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_p) {
                         std::thread p(rysuj, x_history, y_history, theta_history, time);
                         p.detach();
@@ -181,7 +186,7 @@ int main(int argc, char* args[])
 
             }
 
-            SDL_Delay((int)dt * 1000);
+            SDL_Delay((int)(dt * 1000));
 
             SDL_SetRenderDrawColor(gRenderer.get(), 0xFF, 0xFF, 0xFF, 0xFF);
             SDL_RenderClear(gRenderer.get());
@@ -191,36 +196,15 @@ int main(int argc, char* args[])
 
             SDL_RenderPresent(gRenderer.get());
 
-            /* Symulacja drona w przód w czasie */
-            control(quadrotor, K); // Wywo³anie funkcji kontroluj¹cej drona
-            quadrotor.Update(dt); // Aktualizacja stanu drona
+            /* Simulate quadrotor forward in time */
+            control(quadrotor, K);
+            quadrotor.Update(dt);
 
-            // Pêtla while sprawdzaj¹ca, czy dron osi¹gn¹³ now¹ pozycjê w odleg³oœci wiêkszej ni¿ 0.2 od poprzedniej
-            while (abs(x_history.back() - quadrotor.GetState()[0]) > 0.2 || abs(y_history.back() - quadrotor.GetState()[1]) > 0.2) {
-                // Warunek sprawdzaj¹cy, czy nie przekroczono limitu danych w historii
-                if (probki > 8000) {
-                    // Usuniêcie najstarszych danych z wektorów historii
-                    time.erase(time.begin()); // Usuniêcie czasu
-                    x_history.erase(x_history.begin()); // Usuniêcie pozycji X
-                    y_history.erase(y_history.begin()); // Usuniêcie pozycji Y
-                    theta_history.erase(theta_history.begin()); // Usuniêcie k¹ta Theta
-                }
-                // Dodanie nowych danych do wektorów historii
-                time.push_back(++probki); // Dodanie nowego czasu
-                x_history.push_back(quadrotor.GetState()[0]); // Dodanie nowej pozycji X drona
-                y_history.push_back(quadrotor.GetState()[1]); // Dodanie nowej pozycji Y drona
-                theta_history.push_back(quadrotor.GetState()[2]); // Dodanie nowego k¹ta Theta drona
-            }
-
-            // Generowanie dŸwiêku silnika na podstawie ruchu quadrotora
-            double state_theta = quadrotor.GetState()[2]; // Pobierz k¹t theta
-            double left_gain = 1 + std::abs(state_theta) / M_PI; // Oblicz wspó³czynnik wzmocnienia dla lewego g³oœnika
-            double frequency = 150; // Bazowa czêstotliwoœæ dŸwiêku
-            Uint8* audioBuffer = new Uint8[spec.samples];
-            generateEngineSound(audioBuffer, spec.samples, frequency, left_gain);
-            SDL_QueueAudio(deviceId, audioBuffer, spec.samples);
-            SDL_PauseAudioDevice(deviceId, 0);
-            delete[] audioBuffer;
+            // Store trajectory history
+            state = quadrotor.GetState();
+            x_history.push_back(state(0));
+            y_history.push_back(state(1));
+            theta_history.push_back(state(2));
         }
 
     }

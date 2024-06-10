@@ -7,12 +7,12 @@ PlanarQuadrotor::PlanarQuadrotor() {
     std::random_device r;
     std::default_random_engine generator(r());
     std::normal_distribution<float> distribution(0.0, 1.0);
-    auto gaussian = [&](int) {return distribution(generator); };
+    auto gaussian = [&] (int) {return distribution(generator);};
 
     z = Eigen::VectorXf::NullaryExpr(6, gaussian);
 }
 
-PlanarQuadrotor::PlanarQuadrotor(Eigen::VectorXf z) : z(z) {}
+PlanarQuadrotor::PlanarQuadrotor(Eigen::VectorXf z): z(z) {}
 
 void PlanarQuadrotor::SetGoal(Eigen::VectorXf z_goal) {
     this->z_goal = z_goal;
@@ -91,7 +91,7 @@ void PlanarQuadrotor::DoCalcTimeDerivatives() {
     float u_2 = input[1];
 
     z_dot.block(0, 0, 3, 1) = z.block(3, 0, 3, 1);
-
+    
     /* See http://underactuated.mit.edu/acrobot.html#section3 3.3.1 */
     float x_dotdot = -(u_1 + u_2) * sin(theta) / m;
     float y_dotdot = (u_1 + u_2) * cos(theta) / m - g;
@@ -109,7 +109,7 @@ void PlanarQuadrotor::SetInput(Eigen::Vector2f input) {
     this->input = input;
 }
 
-Eigen::VectorXf PlanarQuadrotor::Update(Eigen::Vector2f& input, float dt) {
+Eigen::VectorXf PlanarQuadrotor::Update(Eigen::Vector2f &input, float dt) {
     SetInput(input);
     DoCalcTimeDerivatives();
     DoUpdateState(dt);

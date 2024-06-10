@@ -1,7 +1,7 @@
 #include "lqr.h"
 
 /* Discrete LQR */
-Eigen::MatrixXf LQR(const Eigen::MatrixXf& A, const Eigen::MatrixXf& B, const Eigen::MatrixXf& Q, const Eigen::MatrixXf& R, double eps, u_int max_iter) {
+Eigen::MatrixXf LQR(const Eigen::MatrixXf &A, const Eigen::MatrixXf &B, const Eigen::MatrixXf &Q, const Eigen::MatrixXf &R, double eps, u_int max_iter) {
     Eigen::MatrixXf A_T = A.transpose();
     Eigen::MatrixXf B_T = B.transpose();
 
@@ -27,13 +27,12 @@ Eigen::MatrixXf LQR(const Eigen::MatrixXf& A, const Eigen::MatrixXf& B, const Ei
 
     if (converged) {
         std::cout << "LQR: convergence reached.";
-    }
-    else {
+    } else {
         std::cout << "LQR: max iterations limit reached.";
     }
 
     K = (R + B_T * P * B).inverse() * (B_T * P * A);
 
     return K;
-}
+
     //komentarz

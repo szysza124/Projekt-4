@@ -2,50 +2,6 @@
  * SDL window creation adapted from https://github.com/isJuhn/DoublePendulum
 */
 #include "simulate.h"
-#include <thread>
-#include <matplot/matplot.h>
-#include <SDL/include/SDL.h>
-
-//dŸwiêk silników
-void generateEngineSound(Uint8* buffer, int length, double frequency, double left_gain) {
-    const int amplitude = 10; // Amplituda dŸwiêku
-    const double sampleRate = 100.0; // Czêstotliwoœæ próbkowania
-
-    for (int i = 0; i < length; ++i) {
-        double time = i / sampleRate;
-        double value = amplitude * sin(2.0 * M_PI * frequency * time);
-
-        // Zmiana amplitudy w zale¿noœci od kierunku ruchu
-        if (left_gain > 1.0)
-            buffer[i] = (Uint8)(value * left_gain + 2); // Lewy g³oœnik g³oœniejszy
-        else if (left_gain < 1.0)
-            buffer[i] = (Uint8)(value + 2 * left_gain); // Prawy g³oœnik g³oœniejszy
-        else
-            buffer[i] = (Uint8)(value + 2); // Równa amplituda dla obu g³oœników
-    }
-}
-
-// Definicja funkcji rysuj¹cej trajektoriê drona w trzech ró¿nych p³aszczyznach: X, Y i Theta w czasie
-void rysuj(std::vector<float> x_history, std::vector<float> y_history, std::vector<float> theta_history, std::vector<float> time) {
-    // Tworzenie trzech podwykresów u³o¿onych jeden pod drugim (3 wiersze, 1 kolumna) w oknie wykresu
-    matplot::subplot(3, 1, 0); // Pierwszy podwykres - pozycja X
-    // Tworzenie wykresu pozycji X w zale¿noœci od czasu
-    matplot::plot(time, x_history);
-    matplot::title("X"); // Dodanie tytu³u "X" do wykresu
-
-    matplot::subplot(3, 1, 1); // Drugi podwykres - pozycja Y
-    // Tworzenie wykresu pozycji Y w zale¿noœci od czasu
-    matplot::plot(time, y_history);
-    matplot::title("Y"); // Dodanie tytu³u "Y" do wykresu
-
-    matplot::subplot(3, 1, 2); // Trzeci podwykres - k¹t Theta
-    // Tworzenie wykresu k¹ta Theta w zale¿noœci od czasu
-    matplot::plot(time, theta_history);
-    matplot::title("Theta"); // Dodanie tytu³u "Theta" do wykresu
-
-    matplot::show(); // Wyœwietlenie wygenerowanych wykresów w oknie wykresu
-}
-
 
 Eigen::MatrixXf LQR(PlanarQuadrotor& quadrotor, float dt) {
     //LQR
@@ -77,29 +33,6 @@ void control(PlanarQuadrotor& quadrotor, const Eigen::MatrixXf& K) {
 
 int main(int argc, char* args[])
 {
-    // Inicjalizacja SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
-        std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
-        return -1;
-    }
-
-    // Konfiguracja specyfikacji audio
-    SDL_AudioSpec spec;
-    spec.freq = 54100; // Czêstotliwoœæ próbkowania
-    spec.format = AUDIO_U8; // Format dŸwiêku
-    spec.channels = 2; // Liczba kana³ów (stereo)
-    spec.samples = 8096; // Rozmiar bufora próbek
-    spec.callback = NULL; // Brak funkcji callback
-    spec.userdata = NULL;
-
-    // Otwarcie urz¹dzenia audio
-    SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0);
-    if (deviceId == 0) {
-        std::cerr << "Failed to open audio device: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return -1;
-    }
-
     std::shared_ptr<SDL_Window> gWindow = nullptr;
     std::shared_ptr<SDL_Renderer> gRenderer = nullptr;
     const int SCREEN_WIDTH = 1280;
@@ -116,7 +49,7 @@ int main(int argc, char* args[])
     */
     Eigen::VectorXf initial_state = Eigen::VectorXf::Zero(6);
     initial_state << start_x, start_y, 0, 0, 0, 0;
-    
+
 
     PlanarQuadrotor quadrotor(initial_state);
     PlanarQuadrotorVisualizer quadrotor_visualizer(&quadrotor);
@@ -131,7 +64,7 @@ int main(int argc, char* args[])
     //goal_state << 0, 0, 0, 0, 0, 0;
     //quadrotor.SetGoal(goal_state);
     /* Timestep for the simulation */
-    const float dt = 0.1 ;
+    const float dt = 0.1;
     Eigen::MatrixXf K = LQR(quadrotor, dt);
     Eigen::Vector2f input = Eigen::Vector2f::Zero(2);
 
@@ -149,7 +82,7 @@ int main(int argc, char* args[])
         SDL_Event e;
         bool quit = false;
         float delay;
-        int x=start_x, y=start_y;
+        int x = start_x, y = start_y;
         Eigen::VectorXf state = Eigen::VectorXf::Zero(6);
 
         while (!quit)
@@ -169,21 +102,15 @@ int main(int argc, char* args[])
                 if (e.type == SDL_MOUSEBUTTONDOWN)
                 {
                     SDL_GetMouseState(&x, &y);
-                    
+
                     float x_world = x;// * scale_factor;
-                   
+
                     float y_world = y; //* scale_factor;
 
 
                     goal_state << x_world, y_world, 0, 0, 0, 0;
                     quadrotor.SetGoal(goal_state);
                 }
-                    if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_p) {
-                        std::thread p(rysuj, x_history, y_history, theta_history, time);
-                        p.detach();
-                    }
-                }
-
             }
 
             SDL_Delay((int)(dt * 1000));
@@ -206,10 +133,7 @@ int main(int argc, char* args[])
             y_history.push_back(state(1));
             theta_history.push_back(state(2));
         }
-
     }
-    // Zwalnianie zasobów SDL
-    SDL_CloseAudioDevice(deviceId);
     SDL_Quit();
     return 0;
 }

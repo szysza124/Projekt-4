@@ -14,7 +14,7 @@ void PlanarQuadrotorVisualizer::render(std::shared_ptr<SDL_Renderer>& gRenderer)
     int o_x, o_y;
     q_x = state[0];
     q_y = state[1];
-    q_theta = state[2];
+    q_theta = -1*state[2];//poprawka k¹ta aby dron wygl¹da³ naturalnie 
     /* coordinates transformed in simulate.cpp */
 
     int quadrotor_size[2] = { 160,15 };

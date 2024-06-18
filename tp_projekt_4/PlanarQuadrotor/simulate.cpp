@@ -38,7 +38,7 @@ int main(int argc, char* args[])
     const int SCREEN_WIDTH = 1280;
     const int SCREEN_HEIGHT = 720;
     const float scale_factor = 0.01f; // Adjust based on your simulation's scale
-    const int start_x = 640;
+    const int start_x = 640;//dodanie pocz¹tkowych wartoœci x i y dla drona
     const int start_y = 360;
 
     /**
@@ -103,9 +103,9 @@ int main(int argc, char* args[])
                 {
                     SDL_GetMouseState(&x, &y);
 
-                    float x_world = x;// * scale_factor;
+                    float x_world = x;
 
-                    float y_world = y; //* scale_factor;
+                    float y_world = y; 
 
 
                     goal_state << x_world, y_world, 0, 0, 0, 0;

@@ -53,12 +53,12 @@ void PlanarQuadrotorVisualizer::render(std::shared_ptr<SDL_Renderer>& gRenderer)
     float propeller_right_1[2] = { connector_right_2[0] + (propeller_size[0]), connector_right_2[1] };
     float propeller_right_2[2] = { connector_right_2[0] - (propeller_size[0]), connector_right_2[1] };
 
-    thickLineColor(gRenderer.get(), quadrotor_left[0], quadrotor_left[1], quadrotor_right[0], quadrotor_right[1], quadrotor_size[1], quadrotor_color);
+	thickLineColor(gRenderer.get(), quadrotor_left[0], quadrotor_left[1], quadrotor_right[0], quadrotor_right[1], quadrotor_size[1], quadrotor_color);    //rysowanie korpusu
 
-    thickLineColor(gRenderer.get(), connector_left_1[0], connector_left_1[1], connector_left_2[0], connector_left_2[1], connector_size[0], connector_color);
+	thickLineColor(gRenderer.get(), connector_left_1[0], connector_left_1[1], connector_left_2[0], connector_left_2[1], connector_size[0], connector_color);         //rysowanie ³¹czników
     thickLineColor(gRenderer.get(), connector_right_1[0], connector_right_1[1], connector_right_2[0], connector_right_2[1], connector_size[0], connector_color);
 
-    filledEllipseColor(gRenderer.get(), propeller_left_1[0], propeller_left_1[1], propeller_size[0], propeller_size[1], propeller_color[0]);
+	filledEllipseColor(gRenderer.get(), propeller_left_1[0], propeller_left_1[1], propeller_size[0], propeller_size[1], propeller_color[0]);     //rysowanie œmigie³
     filledEllipseColor(gRenderer.get(), propeller_right_1[0], propeller_right_1[1], propeller_size[0], propeller_size[1], propeller_color[0]);
     filledEllipseColor(gRenderer.get(), propeller_left_2[0], propeller_left_2[1], propeller_size[0], propeller_size[1], propeller_color[1]);
     filledEllipseColor(gRenderer.get(), propeller_right_2[0], propeller_right_2[1], propeller_size[0], propeller_size[1], propeller_color[1]);

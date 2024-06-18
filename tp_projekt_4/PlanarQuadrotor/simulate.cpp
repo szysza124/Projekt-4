@@ -16,8 +16,8 @@ Eigen::MatrixXf LQR(PlanarQuadrotor& quadrotor, float dt) {
     Eigen::Vector2f input = quadrotor.GravityCompInput();
 
     Q.diagonal() << 0.004, 0.004, 400, 0.005, 0.045, 2. / 2 / M_PI;
-    R.row(0) << 3, 0.7;
-    R.row(1) << 0.7, 3;
+    R.row(0) << 3, 7;
+    R.row(1) << 7, 3;
 
     std::tie(A, B) = quadrotor.Linearize();
     A_discrete = Eye + dt * A;
@@ -113,7 +113,7 @@ int main(int argc, char* args[])
                 }
             }
 
-            SDL_Delay((int)(dt * 1000));
+            SDL_Delay((int)(dt * 100));
 
             SDL_SetRenderDrawColor(gRenderer.get(), 0xFF, 0xFF, 0xFF, 0xFF);
             SDL_RenderClear(gRenderer.get());
